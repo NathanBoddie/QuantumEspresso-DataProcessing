@@ -15,12 +15,13 @@ path=sys.argv[1].split("/")[0:-1]
 path="/".join(path)+"/"
 
 pos = cont.index("     Current dimensions of program PWSCF are:")
-current_md="".join(filter(str.isdigit, cont[pos-2].split()[-1]))
-if current_md=="": current_md = "0"
+current_md=cont[pos-2].split()[-1]
+current_md_num="".join(filter(str.isdigit,current_md))
+if current_md_num=="": current_md_num = "0"
 
-next_md=int(current_md)+1
-
-post=open(path+"md"+str(next_md)+".in","w")
+next_md_num=int(current_md_num)+1
+next_md="md"+str(next_md_num)+".in"
+post=open(path+next_md,"w")
 
 config=open("md-config.txt","r")
 post.write(config.read())
@@ -51,4 +52,19 @@ for i in range(len(cont)):
 
 post.write("K_POINTS gamma")
 
+#update qe.sbat
+path=path+"/qe.sbat"
+qe = open(path,"r+")
+cont=qe.read()
+
+line=str("mpirun -np $SLURM_NTASKS pw.x -i "+current_md+" > "+current_md.replace(".in",".out"))
+cont=cont.replace(line,"#"+line)
+
+line=str("mpirun -np $SLURM_NTASKS pw.x -i "+next_md+" > "+next_md.replace(".in",".out"))
+
+cont=cont.replace("#"+line,line)
+qe.seek(0)
+qe.write(cont)
+
 print("completed")
+
